@@ -450,3 +450,36 @@ class ModelInfoResponse(BaseModel):
             }
         }
     }
+
+class WindRoseBin(BaseModel):
+    direction_deg: float = Field(..., description="Center bearing in degrees (0 = N, clockwise)")
+    frequency: float = Field(..., description="Fraction of all hours in this sector (excl. calm)")
+    calm: float = Field(..., description="calm_fraction repeated per bin for stacked chart")
+    speed_0_3: float = Field(..., alias="0-3")
+    speed_3_6: float = Field(..., alias="3-6")
+    speed_6_9: float = Field(..., alias="6-9")
+    speed_9_12: float = Field(..., alias="9-12")
+    speed_gt12: float = Field(..., alias=">12")
+
+    model_config = {"populate_by_name": True}
+
+class WindRoseResponse(BaseModel):
+    bins: List[WindRoseBin]
+    calm_fraction:   float
+    total_hours:     int
+    n_sectors:       int
+    calm_threshold:  float
+    binned:          bool = True
+
+class WindRoseSectorRaw(BaseModel):
+    direction_deg: float = Field(..., description="Centre bearing in degrees (0 = N, clockwise)")
+    windspeeds: List[float] = Field(..., description="Raw wind speed values (m/s) whose direction fell in this sector")
+
+class WindRoseRawResponse(BaseModel):
+    sectors_data:    List[WindRoseSectorRaw]
+    calm_windspeeds: List[float] = Field(..., description="Wind speeds that were below calm_threshold (direction undefined)")
+    calm_fraction:   float
+    total_hours:     int
+    n_sectors:       int
+    calm_threshold:  float
+    binned:          bool = False

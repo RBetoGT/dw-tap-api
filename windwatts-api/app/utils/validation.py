@@ -65,16 +65,15 @@ def validate_lng(model: str, lng: float) -> float:
     return lng
 
 
-def validate_height(model: str, height: int) -> int:
+def validate_height(model: str, height: int, height_type: str) -> int:
     """Validate height parameter"""
-    valid_heights = MODEL_CONFIG[model].get("heights", [])
+    valid_heights = MODEL_CONFIG[model].get(f"{height_type}_heights", [])
     if valid_heights and height not in valid_heights:
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid height for {model}. Must be one of: {valid_heights}",
+            detail=f"Invalid height for {model}. Must be one of: {valid_heights} for {height_type}",
         )
     return height
-
 
 def validate_powercurve(powercurve: str) -> str:
     """Validate power curve name"""
