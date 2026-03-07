@@ -199,10 +199,11 @@ def validate_years(years: list[int], model: str) -> list[int]:
         )
     return years
 
-def validate_timeseries_model(model: str) -> str:
+def validate_model_for_timeseries(model: str) -> str:
     """Validation that model supports timeseries downloads (schema must be full_hourly)"""
     validate_model(model)
-    if MODEL_CONFIG[model]["schema"] != "full_hourly":
+    model_schema_cfg = TEMPORAL_SCHEMAS[MODEL_CONFIG[model]["schema"]]
+    if not model_schema_cfg['period_type'].get('timeseries'):
         raise HTTPException(
             status_code=400,
             detail=f"Model '{model}' does not support timeseries downloads."

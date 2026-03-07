@@ -23,7 +23,7 @@ from app.utils.validation import (
     validate_year_range,
     validate_year_set,
     validate_years,
-    validate_timeseries_model
+    validate_model_for_timeseries,
 )
 from app.power_curve.global_power_curve_manager import power_curve_manager
 
@@ -212,7 +212,7 @@ def get_timeseries_core(
     Returns:
         str or pd.DataFrame: CSV content as string or DataFrame
     """
-    model = validate_timeseries_model(model)
+    model = validate_model_for_timeseries(model)
     source = validate_source(model, source)
     period = validate_period_type(model, period, "timeseries")
 
