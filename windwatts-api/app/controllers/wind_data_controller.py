@@ -12,7 +12,7 @@ from app.data_fetchers.s3_data_fetcher import S3DataFetcher
 from app.data_fetchers.athena_data_fetcher import AthenaDataFetcher
 from app.data_fetchers.data_fetcher_router import DataFetcherRouter
 from app.utils.data_fetcher_utils import format_coordinate, chunker
-from app.utils.validation import validate_model, validate_limit
+from app.utils.validation import validate_model_exists, validate_limit
 from app.utils.wind_data_core import (
     get_windspeed_core,
     get_production_core,
@@ -134,7 +134,7 @@ def get_windspeed(
     """
     try:
         # Catch invalid model before core function call
-        model = validate_model(model)
+        model = validate_model_exists(model)
 
         # Use default source if not provided
         if source is None:
@@ -203,7 +203,7 @@ def get_production(
     """
     try:
         # Catch invalid model before core function call
-        model = validate_model(model)
+        model = validate_model_exists(model)
 
         # Backward compatibility for 'powercurve'
         turbine = turbine or powercurve
@@ -336,7 +336,7 @@ def get_grid_points(
     - **limit**: Number of nearest points to return (1-4)
     """
     try:
-        model = validate_model(model)
+        model = validate_model_exists(model)
 
         # Grid lookup only available via athena
         # Use athena fetcher for the specified model
@@ -415,7 +415,7 @@ def get_model_info(
     - **model**: Data model (era5-quantiles, wtk-timeseries, ensemble-quantiles)
     """
     try:
-        model = validate_model(model)
+        model = validate_model_exists(model)
         config = MODEL_CONFIG[model]
         schema = config["schema"]
         temporal_config = TEMPORAL_SCHEMAS[schema]

@@ -16,7 +16,7 @@ from app.utils.validation import (
     validate_lat,
     validate_lng,
     validate_height,
-    validate_model,
+    validate_model_exists,
     validate_source,
     validate_period_type,
     validate_powercurve,
@@ -54,7 +54,7 @@ def get_windspeed_core(
     """
     lat = validate_lat(model, lat)
     lng = validate_lng(model, lng)
-    model = validate_model(model)
+    model = validate_model_exists(model)
     height = validate_height(model, height)
     source = validate_source(model, source)
     period = validate_period_type(model, period, "windspeed")
@@ -96,7 +96,7 @@ def get_production_core(
     """
     lat = validate_lat(model, lat)
     lng = validate_lng(model, lng)
-    model = validate_model(model)
+    model = validate_model_exists(model)
     height = validate_height(model, height)
     powercurve = validate_powercurve(powercurve)
     source = validate_source(model, source)
@@ -212,8 +212,8 @@ def get_timeseries_core(
     Returns:
         str or pd.DataFrame: CSV content as string or DataFrame
     """
-    model = validate_model(model)
-    validate_model_for_timeseries(model)
+    model = validate_model_exists(model)
+    model = validate_model_for_timeseries(model)
     source = validate_source(model, source)
     period = validate_period_type(model, period, "timeseries")
 
