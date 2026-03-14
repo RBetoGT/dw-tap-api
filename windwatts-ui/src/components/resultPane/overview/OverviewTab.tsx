@@ -42,7 +42,7 @@ export const OverviewTab = () => {
         </>
       )}
 
-      <ProductionCard showDetails={false} />
+      <ProductionCard />
     </Stack>
   );
 };

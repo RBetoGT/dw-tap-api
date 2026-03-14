@@ -1,18 +1,14 @@
-import { useContext, useState, memo } from "react";
+import { useContext, memo } from "react";
 import {
   Card,
-  CardHeader,
   CardContent,
-  CardActions,
-  Button,
-  Collapse,
   Typography,
   Box,
-  Divider,
   Chip,
-  Paper,
   Skeleton,
   Link,
+  Tooltip,
+  IconButton,
 } from "@mui/material";
 import { UnitsContext } from "../../../providers/UnitsContext";
 import {
@@ -22,21 +18,13 @@ import {
   KEY_LOWEST_YEAR,
   DATA_MODEL_INFO,
 } from "../../../constants";
-import { ProductionDataTable } from "../details/ProductionDataTable";
 import { convertOutput, getOutOfBoundsMessage } from "../../../utils";
-import { ExpandMore, ExpandLess } from "@mui/icons-material";
+import { InfoOutlined } from "@mui/icons-material";
 import { OutOfBoundsWarning } from "../../shared";
 import { useProductionData } from "../../../hooks";
 // import { SettingsContext } from "../../providers/SettingsContext";
 
-interface ProductionCardProps {
-  /** When false the expandable data table section is hidden. Defaults to true. */
-  showDetails?: boolean;
-}
-
-export const ProductionCard = memo(
-  ({ showDetails = true }: ProductionCardProps = {}) => {
-    const [expanded, setExpanded] = useState(false);
+export const ProductionCard = memo(() => {
     const { units } = useContext(UnitsContext);
     // const { preferredModel } = useContext(SettingsContext);
     const {
@@ -69,34 +57,13 @@ export const ProductionCard = memo(
         </Link>
       </>
     );
-    const details = [
-      "Wind energy production can vary significantly from year to year. Understanding both the average resource and its variability is key to setting realistic expectations.",
-    ];
-
-    const handleExpandClick = () => {
-      setExpanded(!expanded);
-    };
+    const productionNote = "Wind energy production can vary significantly from year to year. Understanding both the average resource and its variability is key to setting realistic expectations.";
 
     // Out-of-bounds state
     if (outOfBounds) {
       return (
-        <Card>
-          <CardHeader
-            title={
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                Production
-                <Chip
-                  label="Primary Analysis"
-                  size="small"
-                  color="warning"
-                  variant="outlined"
-                />
-              </Box>
-            }
-            subheader={subheader}
-            sx={{ bgcolor: "warning.light", pb: 1 }}
-          />
-          <CardContent sx={{ py: 2 }}>
+        <Card sx={{ border: 1, borderColor: "divider", boxShadow: "none", borderRadius: 2 }}>
+          <CardContent sx={{ pb: 2 }}>
             <OutOfBoundsWarning
               message={getOutOfBoundsMessage(lat, lng, dataModel)}
             />
@@ -108,75 +75,20 @@ export const ProductionCard = memo(
     // Loading state
     if (isLoading) {
       return (
-        <Card>
-          <CardHeader
-            title={
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                {title}
-                <Chip
-                  label="Primary Analysis"
-                  size="small"
-                  color="primary"
-                  variant="outlined"
-                />
-              </Box>
-            }
-            subheader={subheader}
-            sx={{ bgcolor: "var(--color-light)", pb: 1 }}
-          />
+        <Card sx={{ border: 1, borderColor: "divider", boxShadow: "none", borderRadius: 2 }}>
 
           <CardContent sx={{ pb: 2 }}>
-            {/* Skeleton for production metrics */}
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: {
-                  xs: "1fr",
-                  sm: "1fr",
-                  md: "repeat(3, 1fr)",
-                },
-                gap: 2,
-                mb: 3,
-              }}
-            >
+            <Skeleton variant="text" width="70%" height={20} sx={{ mb: 1.5 }} />
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" }, gap: 2 }}>
               {[1, 2, 3].map((index) => (
-                <Paper key={index} sx={{ p: 2, textAlign: "center" }}>
-                  <Skeleton
-                    variant="text"
-                    width="60%"
-                    height={20}
-                    sx={{ mx: "auto" }}
-                  />
-                  <Skeleton
-                    variant="text"
-                    width="80%"
-                    height={40}
-                    sx={{ mx: "auto", mt: 0.5 }}
-                  />
-                  <Skeleton
-                    variant="text"
-                    width="40%"
-                    height={16}
-                    sx={{ mx: "auto" }}
-                  />
-                </Paper>
+                <Box key={index}>
+                  <Skeleton variant="text" width="55%" height={20} />
+                  <Skeleton variant="text" width="85%" height={28} sx={{ mb: 0.75 }} />
+                  <Skeleton variant="rounded" width="100%" height={7} />
+                </Box>
               ))}
             </Box>
-
-            {/* Skeleton for details */}
-            <Skeleton variant="text" width="100%" height={20} />
-            <Skeleton variant="text" width="90%" height={20} />
           </CardContent>
-
-          {showDetails && (
-            <>
-              <Divider sx={{ borderStyle: "dotted" }} />
-              <CardActions sx={{ justifyContent: "space-between", px: 2 }}>
-                <Skeleton variant="text" width="150px" height={20} />
-                <Skeleton variant="rectangular" width="60px" height={32} />
-              </CardActions>
-            </>
-          )}
         </Card>
       );
     }
@@ -184,22 +96,7 @@ export const ProductionCard = memo(
     // Error state
     if (error) {
       return (
-        <Card>
-          <CardHeader
-            title={
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                {title}
-                <Chip
-                  label="Primary Analysis"
-                  size="small"
-                  color="error"
-                  variant="outlined"
-                />
-              </Box>
-            }
-            subheader={subheader}
-            sx={{ bgcolor: "var(--color-light)", pb: 1 }}
-          />
+        <Card sx={{ border: 1, borderColor: "divider", boxShadow: "none", borderRadius: 2 }}>
 
           <CardContent sx={{ py: 4, textAlign: "center" }}>
             <Typography color="error" variant="h6" gutterBottom>
@@ -217,24 +114,12 @@ export const ProductionCard = memo(
     // No data state
     if (!hasData) {
       return (
-        <Card>
-          <CardHeader
-            title={
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                {title}
-                <Chip
-                  label="Primary Analysis"
-                  size="small"
-                  color="default"
-                  variant="outlined"
-                />
-              </Box>
-            }
-            subheader={subheader}
-            sx={{ bgcolor: "var(--color-light)", pb: 1 }}
-          />
+        <Card sx={{ border: 1, borderColor: "divider", boxShadow: "none", borderRadius: 2 }}>
 
           <CardContent sx={{ py: 4, textAlign: "center" }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+              {subheader}
+            </Typography>
             <Typography color="text.secondary" variant="h6" gutterBottom>
               No Production Data Available
             </Typography>
@@ -259,176 +144,117 @@ export const ProductionCard = memo(
       summaryData?.[KEY_HIGHEST_YEAR]?.[KEY_KWH_PRODUCED] || 0
     );
 
-    // Determine data type and set up variables
-    // may need something more robust here if we add more data types
-    const monthlyData = "monthly_avg_energy_production" in productionData;
-    const tableData = monthlyData
-      ? productionData.monthly_avg_energy_production
-      : productionData?.yearly_avg_energy_production;
-
-    const detailsLabel = monthlyData
-      ? "Monthly Production Details"
-      : "Yearly Production Details";
-
-    const tableTitle = "";
+    const summaryValues = [avgProduction, highProduction, lowProduction];
+    const maxSummaryValue = Math.max(...summaryValues, 1);
+    const summaryMetrics = [
+      { label: "Average", value: avgProduction, color: "primary.main" },
+      { label: "Highest", value: highProduction, color: "success.main" },
+      { label: "Lowest", value: lowProduction, color: "warning.main" },
+    ];
 
     return (
-      <Card>
-        <CardHeader
-          title={
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              {title}
-              <Chip
-                label="Primary Analysis"
-                size="small"
-                color="primary"
-                variant="outlined"
-              />
-            </Box>
-          }
-          subheader={subheader}
-          sx={{ bgcolor: "var(--color-light)", pb: 1 }}
-        />
+      <Card sx={{ border: 1, borderColor: "divider", boxShadow: "none", borderRadius: 2 }}>
 
-        {/* Key Production Metrics - Always Visible */}
-        <CardContent sx={{ pb: 2 }}>
+        {/* Key Production Metrics */}
+        <CardContent sx={{ pb: 2, pt: 1.5 }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "flex-start",
+              justifyContent: "space-between",
+              mb: 0.25,
+              gap: 1,
+            }}
+          >
+            <Typography variant="body2" color="text.secondary">
+              {subheader}
+            </Typography>
+            <Tooltip
+              title={productionNote}
+              arrow
+            >
+              <IconButton
+                size="small"
+                aria-label="production summary info"
+                sx={{ p: 0.25 }}
+              >
+                <InfoOutlined fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+
           <Box
             sx={{
               display: "grid",
               gridTemplateColumns: {
                 xs: "1fr",
-                sm: "1fr",
-                md: "repeat(3, 1fr)",
+                sm: "repeat(2, minmax(0, 1fr))",
+                md: "repeat(3, minmax(0, 1fr))",
               },
               gap: 2,
-              mb: 3,
             }}
           >
-            <Paper
-              sx={{
-                p: 2,
-                textAlign: "center",
-                bgcolor: "primary.light",
-                color: "primary.contrastText",
-              }}
-            >
-              <Typography variant="caption" sx={{ opacity: 0.9 }}>
-                Average
-              </Typography>
-              <Typography variant="h5" sx={{ fontWeight: "bold", mt: 0.5 }}>
-                {convertOutput(Number(avgProduction), units.output).replace(
-                  /\s\w+$/,
-                  ""
-                )}
-              </Typography>
-              <Typography variant="caption">{units.output}</Typography>
-            </Paper>
+            {summaryMetrics.map((metric) => {
+              const barPercent = (Math.max(metric.value, 0) / maxSummaryValue) * 100;
 
-            <Paper
-              sx={{
-                p: 2,
-                textAlign: "center",
-                bgcolor: "success.light",
-                color: "success.contrastText",
-              }}
-            >
-              <Typography variant="caption" sx={{ opacity: 0.9 }}>
-                Highest Year
-              </Typography>
-              <Typography variant="h6" sx={{ fontWeight: "bold", mt: 0.5 }}>
-                {convertOutput(Number(highProduction), units.output).replace(
-                  /\s\w+$/,
-                  ""
-                )}
-              </Typography>
-              <Typography variant="caption">{units.output}</Typography>
-            </Paper>
+              return (
+                <Box key={metric.label} sx={{ minWidth: 0 }}>
+                  <Box
+                    sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}
+                  >
+                    <Box
+                      sx={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: 0.5,
+                        bgcolor: metric.color,
+                        flexShrink: 0,
+                      }}
+                    />
+                    <Typography
+                      variant="body2"
+                      sx={{ fontWeight: 500, color: "text.secondary" }}
+                    >
+                      {metric.label}
+                    </Typography>
+                  </Box>
 
-            <Paper
-              sx={{
-                p: 2,
-                textAlign: "center",
-                bgcolor: "warning.light",
-                color: "warning.contrastText",
-              }}
-            >
-              <Typography variant="caption" sx={{ opacity: 0.9 }}>
-                Lowest Year
-              </Typography>
-              <Typography variant="h6" sx={{ fontWeight: "bold", mt: 0.5 }}>
-                {convertOutput(Number(lowProduction), units.output).replace(
-                  /\s\w+$/,
-                  ""
-                )}
-              </Typography>
-              <Typography variant="caption">{units.output}</Typography>
-            </Paper>
+                  <Typography
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: { xs: "1.05rem", md: "1.15rem" },
+                      lineHeight: 1.2,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      mb: 0.75,
+                    }}
+                  >
+                    {convertOutput(metric.value, units.output)} 
+                  </Typography>
+
+                  <Box
+                    sx={{
+                      width: "100%",
+                      height: 7,
+                      borderRadius: 99,
+                      bgcolor: "action.hover",
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: `${barPercent}%`,
+                        height: "100%",
+                        borderRadius: 99,
+                        bgcolor: metric.color,
+                      }}
+                    />
+                  </Box>
+                </Box>
+              );
+            })}
           </Box>
-
-          {details.map((detail, index) => (
-            <Typography
-              mb={1}
-              key={title + "result_detail" + index}
-              variant="body2"
-              color="text.secondary"
-            >
-              {detail}
-            </Typography>
-          ))}
         </CardContent>
-
-        {showDetails && (
-          <>
-            <Divider sx={{ borderStyle: "dotted" }} />
-
-            {/* Detailed Breakdown - Expandable */}
-            <CardActions
-              sx={{
-                justifyContent: { xs: "flex-end", sm: "space-between" },
-                px: 2,
-              }}
-            >
-              <Typography
-                variant="body1"
-                color="text.secondary"
-                sx={{
-                  display: { xs: "none", sm: "block" }, // Hide on mobile to save space
-                }}
-              >
-                {detailsLabel}
-              </Typography>
-              <Button
-                onClick={handleExpandClick}
-                aria-expanded={expanded}
-                aria-label="show detailed breakdown"
-                variant="outlined"
-                size="small"
-                startIcon={expanded ? <ExpandLess /> : <ExpandMore />}
-                sx={{
-                  whiteSpace: "nowrap",
-                  minWidth: "auto",
-                  px: 2,
-                }}
-              >
-                {expanded ? "Hide" : "Show"}
-              </Button>
-            </CardActions>
-
-            <Collapse in={expanded} timeout="auto" unmountOnExit>
-              <CardContent sx={{ pt: 0 }}>
-                {tableData && (
-                  <ProductionDataTable
-                    title={tableTitle}
-                    data={tableData}
-                    timeUnit={monthlyData ? "month" : "year"}
-                    showAccordion={false}
-                  />
-                )}
-              </CardContent>
-            </Collapse>
-          </>
-        )}
       </Card>
     );
-  }
-);
+});
