@@ -40,7 +40,7 @@ export const SettingsSummary = () => {
         textAlign="center"
         sx={{ my: 2, fontWeight: 600, color: "text.secondary" }}
       >
-        Summary Results Based on
+        Results Based on
       </Divider>
       <Grid
         container
