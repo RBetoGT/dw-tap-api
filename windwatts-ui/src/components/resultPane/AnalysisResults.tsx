@@ -1,4 +1,4 @@
-import { Stack, Tabs, Tab } from "@mui/material";
+import { Box, Stack, Tabs, Tab } from "@mui/material";
 import { useState } from "react";
 import { OverviewTab } from "./overview/OverviewTab";
 import { DetailsTab } from "./details/DetailsTab";
@@ -19,7 +19,12 @@ export const AnalysisResults = () => {
         <Tab label="Details" />
       </Tabs>
 
-      {activeTab === 0 ? <OverviewTab /> : <DetailsTab />}
+      <Box sx={{ display: activeTab === 0 ? "block" : "none" }}>
+        <OverviewTab />
+      </Box>
+      <Box sx={{ display: activeTab === 1 ? "block" : "none" }}>
+        <DetailsTab />
+      </Box>
     </Stack>
   );
 };
