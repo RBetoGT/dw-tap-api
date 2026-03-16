@@ -7,6 +7,7 @@ export { useProductionData } from "./useProductionData";
 export { useEnsembleTilesData } from "./useEnsembleTilesData";
 export { useToggle } from "./useToggle";
 export { useWindData } from "./useWindData";
+export { useWindRoseData } from "./useWindRoseData";
 export { useLossAdjustedProductionData } from "./useLossAdjustedProductionData";
 export { useOutputUnit } from "./useOutputUnit";
 export {

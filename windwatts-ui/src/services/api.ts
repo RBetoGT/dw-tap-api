@@ -1,10 +1,35 @@
 import {
   EnergyProductionRequest,
   WindspeedByLatLngRequest,
+  WindRoseRequest,
   NearestGridLocationRequest,
   CSVExportRequest,
   CSVBatchExportRequest,
+  WindRoseResponse,
 } from "../types";
+
+const USE_WIND_ROSE_PLACEHOLDER = true;
+
+const WIND_ROSE_PLACEHOLDER_RESPONSE: WindRoseResponse = {
+  unit: "m/s",
+  speedBins: [
+    { label: "0-3", min: 0, max: 3 },
+    { label: "3-6", min: 3, max: 6 },
+    { label: "6-9", min: 6, max: 9 },
+    { label: "9-12", min: 9, max: 12 },
+    { label: "12-15", min: 12, max: 15 },
+  ],
+  sectors: [
+    { direction: "N", frequencies: [4, 8, 5, 2, 1] },
+    { direction: "NE", frequencies: [3, 7, 8, 4, 2] },
+    { direction: "E", frequencies: [2, 5, 10, 5, 2] },
+    { direction: "SE", frequencies: [2, 4, 7, 4, 1] },
+    { direction: "S", frequencies: [3, 6, 6, 2, 1] },
+    { direction: "SW", frequencies: [4, 9, 8, 3, 1] },
+    { direction: "W", frequencies: [5, 10, 7, 3, 1] },
+    { direction: "NW", frequencies: [4, 8, 6, 2, 1] },
+  ],
+};
 
 export const fetchWrapper = async (url: string, options: RequestInit) => {
   const response = await fetch(url, options);
@@ -35,6 +60,27 @@ export const getWindspeedByLatLong = async ({
       "Content-Type": "application/json",
     },
   };
+  return fetchWrapper(url, options);
+};
+
+export const getWindRose = async ({
+  lat,
+  lng,
+  hubHeight,
+  dataModel,
+}: WindRoseRequest): Promise<WindRoseResponse> => {
+  const url = `/api/v1/${dataModel}/windrose?lat=${lat}&lng=${lng}&height=${hubHeight}`;
+  const options = {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  };
+
+  if (USE_WIND_ROSE_PLACEHOLDER) {
+    return structuredClone(WIND_ROSE_PLACEHOLDER_RESPONSE);
+  }
+
   return fetchWrapper(url, options);
 };
 
