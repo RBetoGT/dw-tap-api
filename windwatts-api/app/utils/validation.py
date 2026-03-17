@@ -67,8 +67,8 @@ def validate_lng(model: str, lng: float) -> float:
 
 def validate_height(model: str, height: int, height_type: str) -> int:
     """Validate height parameter"""
-    valid_heights = MODEL_CONFIG[model].get(f"{height_type}_heights", [])
-    if valid_heights and height not in valid_heights:
+    valid_heights = MODEL_CONFIG[model]["heights"].get(f"{height_type}", [])
+    if valid_heights and (height not in valid_heights):
         raise HTTPException(
             status_code=400,
             detail=f"Invalid height for {model}. Must be one of: {valid_heights} for {height_type}",
