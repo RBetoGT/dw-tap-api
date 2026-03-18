@@ -12,6 +12,7 @@ from io import StringIO
 from app.config.model_config import MODEL_CONFIG, TEMPORAL_SCHEMAS
 import pandas as pd
 import numpy as np
+import bisect
 
 from app.utils.validation import (
     validate_lat,
@@ -24,6 +25,9 @@ from app.utils.validation import (
     validate_year_range,
     validate_year_set,
     validate_years,
+    validate_sectors,
+    validate_calm_threshold,
+    validate_bin,
 )
 from app.power_curve.global_power_curve_manager import power_curve_manager
 
@@ -333,32 +337,32 @@ def get_timeseries_energy_core(
     result_df.to_csv(csv_io, index=False)
     return csv_io.getvalue()
 
+
 def _make_sector_angles(n: int):
-    "Return list of centre bearings (degress) and sector width for n equal sectors."
+    "Return list of centre bearings (degrees) and sector width for n equal sectors."
     sector_width = 360.0 / n
-    centers = [round(i * sector_width, 4) for i in range(n)]
+    centers = [round(i * sector_width, 2) for i in range(n)]
     return centers, sector_width
 
-def get_windrose_core(
-        model: str,
-        gridIndices: List[str],
-        height: int,
-        data_fetcher_router: DataFetcherRouter,
-        binned: bool = True,
-        sectors: int = 16,
-        calm_threshold: float = 0.5,
-        year_set: str = "sample",
-        year_range: Optional[str] = None
-):
-    # Only 4, 8, or 16 sectors are supported (standard wind rose divisions)
-    if sectors not in (4, 8, 16):
-        raise HTTPException(status_code=400, detail="sectors must be 4, 8, or 16")
-    if not (0 <= calm_threshold < 3):
-        raise HTTPException(status_code=400, detail="calm_threshold must be >= 0 and < 3")
 
+def get_windrose_core(
+    model: str,
+    gridIndices: List[str],
+    height: int,
+    data_fetcher_router: DataFetcherRouter,
+    bin: int,
+    sectors: int,
+    calm_threshold: float,
+    year_set: str,
+    year_range: Optional[str],
+):
     # Validate model and ensure the requested height has wind direction data available
     model = validate_model(model)
+    height = validate_height(model, height, "windspeed")
     height = validate_height(model, height, "winddirection")
+    sectors = validate_sectors(sectors)
+    calm_threshold = validate_calm_threshold(calm_threshold)
+    bin = validate_bin(bin)
     source = MODEL_CONFIG.get(model, {}).get("source")
 
     ws_col = f"windspeed_{height}m"
@@ -366,14 +370,16 @@ def get_windrose_core(
 
     # Fetch raw hourly timeseries; wind rose requires full per-hour records
     df = get_timeseries_core(
-        model, gridIndices, "hourly", source, data_fetcher_router,
-        years=None, year_range=year_range, year_set=year_set, return_dataframe=True,
+        model,
+        gridIndices,
+        "hourly",
+        source,
+        data_fetcher_router,
+        years=None,
+        year_range=year_range,
+        year_set=year_set,
+        return_dataframe=True,
     )
-
-    # Confirm both windspeed and wind direction columns exist at the requested height
-    missing = [c for c in (ws_col, wd_col) if c not in df.columns]
-    if missing:
-        raise HTTPException(status_code=400, detail=f"Columns not found: {missing}")
 
     ws = df[ws_col].to_numpy(dtype=float)
     wd = df[wd_col].to_numpy(dtype=float)
@@ -387,62 +393,68 @@ def get_windrose_core(
 
     # Divide the compass into equal sectors and assign each active observation to one
     sector_centers, sector_width = _make_sector_angles(sectors)
-    sector_idx = (np.floor((active_wd + sector_width / 2) % 360 / sector_width)).astype(int)
+    sector_idx = (np.floor((active_wd + sector_width / 2) % 360 / sector_width)).astype(
+        int
+    )
 
     # Fields shared by both binned and raw response formats
     common = {
         "calm_fraction": calm_fraction,
         "total_hours": total,
         "n_sectors": sectors,
-        "calm_threshold": calm_threshold
+        "calm_threshold": calm_threshold,
     }
 
-    if not binned:
-        # Raw - return the actual windspeed values per sector instead of frequency bins
-        sectors_data = []
+    if bin == 0:
+        # Raw - return actual windspeed values per sector keyed by str(direction_deg)
+        sectors_data = {}
         for i, deg in enumerate(sector_centers):
-            sector_ws = active_ws[sector_idx == i].round(3).tolist()
-            sectors_data.append({
-                "direction_deg": deg,
-                "windspeeds": sector_ws
-            })
+            sector_ws = sorted(active_ws[sector_idx == i].round(4).tolist())
+            sectors_data[str(deg)] = sector_ws
         return {
             **common,
+            "bins": [],
             "sectors_data": sectors_data,
-            "calm_windspeeds": ws[calm_mask].round(3).tolist(),
-            "binned": False
+            "calm_windspeeds": sorted(ws[calm_mask].round(4).tolist()),
         }
 
-    # Binned - compute what fraction of all hours falls in each speed band per sector
-    SPEED_BINS   = [0.5, 3.0, 6.0, 9.0, 12.0]
-    SPEED_LABELS = ["0-3", "3-6", "6-9", "9-12", ">12"]
+    raw_max_ws = float(np.ceil(active_ws.max()))
+    # Round up to the nearest multiple of bin count for clean integer edges
+    max_ws = float(np.ceil(raw_max_ws / bin) * bin)
+    bin_edges = [round(float(e), 1) for e in np.linspace(0, max_ws, bin + 1)]
 
-    bins = []
+    speed_labels = [f"{bin_edges[j]}-{bin_edges[j + 1]}" for j in range(bin)]
+
+    result_bins = []
     for i, deg in enumerate(sector_centers):
         in_sector = sector_idx == i
-        sector_ws = active_ws[in_sector]
+        # Sort once per sector so bisect can locate bin boundaries in O(log n)
+        sector_ws = sorted(active_ws[in_sector].tolist())
 
-        # Count hours in each speed band and put as fraction of total hours
         speed_fracs = {}
-        for j, slabel in enumerate(SPEED_LABELS):
-            lo = SPEED_BINS[j]
-            hi = SPEED_BINS[j + 1] if j + 1 < len(SPEED_BINS) else np.inf
-            count = int(((sector_ws >= lo) & (sector_ws < hi)).sum())
-            speed_fracs[slabel] = round(count / total, 4)
+        for j, slabel in enumerate(speed_labels):
+            lo = bin_edges[j]
+            hi = bin_edges[j + 1] if j + 1 < bin else float("inf")
+            left = bisect.bisect_left(sector_ws, lo)
+            right = (
+                bisect.bisect_left(sector_ws, hi)
+                if hi != float("inf")
+                else len(sector_ws)
+            )
+            speed_fracs[slabel] = round((right - left) / total, 4)
 
-        bins.append({
-            "direction_deg": deg,
-            "frequency": round(float(in_sector.sum()) / total, 4),
-            "calm": calm_fraction,
-            "0-3":  speed_fracs["0-3"],
-            "3-6":  speed_fracs["3-6"],
-            "6-9":  speed_fracs["6-9"],
-            "9-12": speed_fracs["9-12"],
-            ">12":  speed_fracs[">12"],
-        })
+        result_bins.append(
+            {
+                "direction_deg": deg,
+                "frequency": round(float(in_sector.sum()) / total, 4),
+                "calm": calm_fraction,
+                "speed_bands": speed_fracs,
+            }
+        )
 
     return {
         **common,
-        "bins": bins,
-        "binned": True
+        "bins": result_bins,
+        "sectors_data": {},
+        "calm_windspeeds": [],
     }

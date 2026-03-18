@@ -80,6 +80,7 @@ def validate_height(model: str, height: int, height_type: str) -> int:
         )
     return height
 
+
 def validate_powercurve(powercurve: str) -> str:
     """Validate power curve name"""
     # Import here to avoid circular dependency
@@ -202,3 +203,43 @@ def validate_years(years: list[int], model: str) -> list[int]:
             detail=f"Invalid years for {model}: {invalid_years}. Currently supporting years {year_range}",
         )
     return years
+
+
+def validate_sectors(sectors: int) -> int:
+    "Validate number of sectors for WindRose"
+    if sectors not in (4, 8, 16):
+        raise HTTPException(
+            status_code=400,
+            detail="sectors must be 4, 8, or 16",
+        )
+    return sectors
+
+
+def validate_calm_threshold(calm_threshold: float) -> float:
+    "Validate calm threshold for WindRose"
+    if not (0 <= calm_threshold < 3):
+        raise HTTPException(
+            status_code=400,
+            detail="calm_threshold must be between 0 and 3.",
+        )
+    return calm_threshold
+
+
+def validate_bin(bin: int) -> int:
+    """Validate bin parameter for WindRose"""
+    if bin < 0:
+        raise HTTPException(
+            status_code=400,
+            detail="bin must be >= 0. Use 0 for raw mode or 2-20 for binned mode.",
+        )
+    if bin == 1:
+        raise HTTPException(
+            status_code=400,
+            detail="bin=1 is not meaningful. Use 0 for raw mode or 2+ for binned mode.",
+        )
+    if bin > 20:
+        raise HTTPException(
+            status_code=400,
+            detail="bin must be <= 20.",
+        )
+    return bin

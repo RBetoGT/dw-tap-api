@@ -1,4 +1,4 @@
-from typing import List, Optional, Union
+from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Path, Query
 from fastapi.responses import StreamingResponse
 import zipfile
@@ -18,7 +18,7 @@ from app.utils.wind_data_core import (
     get_production_core,
     get_timeseries_core,
     get_timeseries_energy_core,
-    get_windrose_core
+    get_windrose_core,
 )
 
 from app.power_curve.global_power_curve_manager import power_curve_manager
@@ -33,7 +33,6 @@ from app.schemas import (
     ModelInfoResponse,
     AvailableModelsResponse,
     WindRoseResponse,
-    WindRoseRawResponse
 )
 
 router = APIRouter()
@@ -707,20 +706,28 @@ def download_timeseries_energy_batch(
     except Exception:
         raise HTTPException(status_code=500, detail="Internal server error")
 
+
 @router.get(
     "/{model}/windrose",
-    summary = "Wind rose from hourly timeseries",
-    response_model = Union[WindRoseResponse, WindRoseRawResponse],
+    summary="Wind rose from hourly timeseries",
+    response_model=WindRoseResponse,
 )
 def get_windrose(
     model: str = Path(..., description="Data model: era5-timeseries"),
     gridIndex: str = Query(..., description="Grid index identifier"),
     height: int = Query(..., description="Height in meters"),
-    binned: bool = Query(True, description="True: pre-binned rose; False: raw per-sector speed arrays"),
+    bin: int = Query(
+        5,
+        description="Speed band count per sector. 0 = raw mode: returns the individual wind speed values for each sector. 2–20 = binned mode: divides the wind speed range (0 to site max) into this many equal-width bands and returns the fraction of hours in each band per sector. Default: 5.",
+    ),
     sectors: int = Query(16, description="Directional sectors: 4, 8 or 16"),
-    calm_threshold: float = Query(0.5, description="Speed (m/s) below which a row is calm"),
-    year_set: str = Query("sample",  description="Dataset size: full or sample"),
-    year_range: Optional[str] = Query(None, description="Range of years for download. Format: YYYY-YYYY"),
+    calm_threshold: float = Query(
+        0.0, description="Speed (m/s) below which a row is calm. Defaults to 0."
+    ),
+    year_set: str = Query("sample", description="Dataset size: full or sample"),
+    year_range: Optional[str] = Query(
+        None, description="Range of years for download. Format: YYYY-YYYY"
+    ),
 ):
     try:
         return get_windrose_core(
@@ -728,11 +735,11 @@ def get_windrose(
             [gridIndex],
             height,
             data_fetcher_router,
-            binned,
+            bin,
             sectors,
             calm_threshold,
             year_set,
-            year_range
+            year_range,
         )
     except HTTPException:
         raise
