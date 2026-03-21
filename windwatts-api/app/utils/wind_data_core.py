@@ -338,11 +338,18 @@ def get_timeseries_energy_core(
     return csv_io.getvalue()
 
 
-def _make_sector_angles(n: int):
-    "Return list of centre bearings (degrees) and sector width for n equal sectors."
-    sector_width = 360.0 / n
-    centers = [round(i * sector_width, 2) for i in range(n)]
-    return centers, sector_width
+def _compute_sectors(n: int):
+    "Return sector centre bearings (degrees CW from North), sector width in degrees, and sector edges."
+    sector_width_deg = 360.0 / n
+    centers = [round(i * sector_width_deg, 2) for i in range(n)]
+    edges = [
+        (
+            round((c - 0.5 * sector_width_deg) % 360, 2),
+            round((c + 0.5 * sector_width_deg) % 360, 2),
+        )
+        for c in centers
+    ]
+    return centers, sector_width_deg, edges
 
 
 def get_windrose_core(
@@ -392,34 +399,45 @@ def get_windrose_core(
     active_wd = wd[~calm_mask]
 
     # Divide the compass into equal sectors and assign each active observation to one
-    sector_centers, sector_width = _make_sector_angles(sectors)
-    sector_idx = (np.floor((active_wd + sector_width / 2) % 360 / sector_width)).astype(
-        int
-    )
-
-    if bin == 1:
-        # Raw - return actual windspeed values per sector keyed by str(direction_deg)
-        sectors_data = {}
-        for i, deg in enumerate(sector_centers):
-            sector_ws = sorted(active_ws[sector_idx == i].round(4).tolist())
-            sectors_data[str(deg)] = sector_ws
-        return {
-            "calm_fraction": calm_fraction,
-            "bin_edges": [],
-            "cells": [],
-            "sectors_data": sectors_data,
-        }
-
+    sector_centers, sector_width_deg, sector_edges = _compute_sectors(sectors)
+    sector_idx = (
+        np.floor((active_wd + sector_width_deg / 2) % 360 / sector_width_deg)
+    ).astype(int)
     raw_max_ws = float(np.ceil(active_ws.max()))
     # Round up to the nearest multiple of bin count for clean integer edges
     max_ws = float(np.ceil(raw_max_ws / bin) * bin)
     bin_edges = [round(float(e), 1) for e in np.linspace(0, max_ws, bin + 1)]
 
-    cells = []
-    for i, deg in enumerate(sector_centers):
-        in_sector = sector_idx == i
-        # Sort once per sector so bisect can locate bin boundaries in O(log n)
-        sector_ws = sorted(active_ws[in_sector].tolist())
+    bin_info = [
+        {
+            "bin_index": j,
+            "bin_min": bin_edges[j],
+            "bin_max": bin_edges[j + 1],
+        }
+        for j in range(bin)
+    ]
+
+    sector_info = [
+        {
+            "sector_index": i,
+            "center_bearing_deg": sector_centers[i],
+            "from_deg": sector_edges[i][0],
+            "to_deg": sector_edges[i][1],
+        }
+        for i in range(sectors)
+    ]
+
+    common = {
+        "no_of_sectors": sectors,
+        "no_of_bins": bin,
+        "calm_info": {"calm_threshold": calm_threshold, "calm_fraction": calm_fraction},
+        "calm_data": ws[calm_mask].round(2).tolist(),
+        "sector_info": sector_info,
+    }
+
+    bin_data = []
+    for i, _ in enumerate(sector_centers):
+        sector_ws = sorted(active_ws[sector_idx == i].round(2).tolist())
         for j in range(bin):
             lo = bin_edges[j]
             hi = bin_edges[j + 1] if j + 1 < bin else float("inf")
@@ -430,12 +448,17 @@ def get_windrose_core(
                 else len(sector_ws)
             )
             freq = round((right - left) / total, 4)
-            if freq > 0:
-                cells.append({"angle_deg": deg, "bin_index": j, "frequency": freq})
+            bin_data.append(
+                {
+                    "bin_index": j,
+                    "sector_index": i,
+                    "data": sector_ws[left:right],
+                    "frequency": freq,
+                }
+            )
 
     return {
-        "calm_fraction": calm_fraction,
-        "bin_edges": bin_edges,
-        "cells": cells,
-        "sectors_data": {},
+        **common,
+        "bin_info": bin_info,
+        "bin_data": bin_data,
     }
