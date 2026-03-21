@@ -455,42 +455,52 @@ class ModelInfoResponse(BaseModel):
     }
 
 
-class WindRoseCell(BaseModel):
-    angle_deg: float = Field(
-        ..., description="Sector centre bearing in degrees (0 = North)"
+class RoseCalmInfo(BaseModel):
+    calm_threshold: float = Field(
+        ..., description="Value below which an observation is calm"
     )
-    bin_index: int = Field(..., description="Zero-based speed bin index")
+    calm_fraction: float = Field(
+        ..., description="Fraction of total hours that are calm (3 d.p.)"
+    )
+
+
+class RoseSectorInfo(BaseModel):
+    sector_index: int = Field(..., description="Zero-based sector index")
+    center_bearing_deg: float = Field(
+        ..., description="Sector centre bearing in degrees CW from North"
+    )
+    from_deg: float = Field(
+        ..., description="Sector start bearing (degrees CW from North)"
+    )
+    to_deg: float = Field(..., description="Sector end bearing (degrees CW from North)")
+
+
+class RoseBinInfo(BaseModel):
+    bin_index: int = Field(..., description="Zero-based bin index")
+    bin_min: float = Field(..., description="Lower bound of bin")
+    bin_max: float = Field(..., description="Upper bound of bin")
+
+
+class RoseBinData(BaseModel):
+    sector_index: int = Field(..., description="Sector this cell belongs to")
+    bin_index: int = Field(..., description="Bin this cell belongs to")
     frequency: float = Field(
         ..., description="Fraction of total hours in this (sector, bin) cell"
     )
+    data: List[float] = Field(..., description="Raw values in this (sector, bin) cell")
 
 
-class WindRoseResponse(BaseModel):
-    calm_fraction: float = Field(
-        ..., description="Fraction of total hours with speed below calm_threshold"
+class RoseResponse(BaseModel):
+    no_of_sectors: int = Field(..., description="Number of compass sectors")
+    no_of_bins: int = Field(..., description="Number of bins (1 = raw mode)")
+    calm_info: RoseCalmInfo = Field(..., description="Calm threshold and fraction")
+    calm_data: List[float] = Field(..., description="Raw values below calm_threshold")
+    sector_info: List[RoseSectorInfo] = Field(
+        ..., description="Geometry of each sector"
     )
-    # binned mode (bin>=2)
-    bin_edges: List[float] = Field(
-        default_factory=list,
-        description=(
-            "Speed bin edges in m/s. Length = n_bins + 1. "
-            "bin_edges[i]–bin_edges[i+1] defines the speed range for bin index i. "
-            "Empty in raw mode."
-        ),
+    bin_info: List[RoseBinInfo] = Field(
+        ..., description="Value range of each bin. Empty in raw mode (no_of_bins=1)"
     )
-    cells: List[WindRoseCell] = Field(
-        default_factory=list,
-        description=(
-            "Sparse flat grid of (sector, bin) cells with non-zero frequency. "
-            "One entry per occupied (angle_deg, bin_index) pair. "
-            "Empty in raw mode."
-        ),
-    )
-    # raw mode (bin = 1)
-    sectors_data: Dict[str, List[float]] = Field(
-        default_factory=dict,
-        description=(
-            "Map of str(angle_deg) -> sorted list of raw windspeed values per sector. "
-            "Populated only in raw mode (bin=1)."
-        ),
+    bin_data: List[RoseBinData] = Field(
+        ..., description="Frequency and raw values per (sector, bin) cell"
     )
