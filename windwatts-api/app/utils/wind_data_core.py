@@ -18,7 +18,7 @@ from app.utils.validation import (
     validate_lat,
     validate_lng,
     validate_height,
-    validate_model,
+    validate_model_exists,
     validate_source,
     validate_period_type,
     validate_powercurve,
@@ -28,6 +28,7 @@ from app.utils.validation import (
     validate_sectors,
     validate_calm_threshold,
     validate_bin,
+    validate_model_for_timeseries,
 )
 from app.power_curve.global_power_curve_manager import power_curve_manager
 
@@ -58,7 +59,7 @@ def get_windspeed_core(
     """
     lat = validate_lat(model, lat)
     lng = validate_lng(model, lng)
-    model = validate_model(model)
+    model = validate_model_exists(model)
     height = validate_height(model, height, "windspeed")
     source = validate_source(model, source)
     period = validate_period_type(model, period, "windspeed")
@@ -100,7 +101,7 @@ def get_production_core(
     """
     lat = validate_lat(model, lat)
     lng = validate_lng(model, lng)
-    model = validate_model(model)
+    model = validate_model_exists(model)
     height = validate_height(model, height, "windspeed")
     powercurve = validate_powercurve(powercurve)
     source = validate_source(model, source)
@@ -216,7 +217,8 @@ def get_timeseries_core(
     Returns:
         str or pd.DataFrame: CSV content as string or DataFrame
     """
-    model = validate_model(model)
+    model = validate_model_exists(model)
+    model = validate_model_for_timeseries(model)
     source = validate_source(model, source)
     period = validate_period_type(model, period, "timeseries")
 
@@ -364,7 +366,7 @@ def get_windrose_core(
     year_range: Optional[str],
 ):
     # Validate model and ensure the requested height has wind direction data available
-    model = validate_model(model)
+    model = validate_model_exists(model)
     height = validate_height(model, height, "windspeed")
     height = validate_height(model, height, "winddirection")
     sectors = validate_sectors(sectors)
