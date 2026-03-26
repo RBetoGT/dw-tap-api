@@ -236,12 +236,13 @@ def validate_bin(bin: int) -> int:
         )
     return bin
 
+
 def validate_model_for_timeseries(model: str) -> str:
     """Validation that model supports timeseries downloads"""
     model_schema_cfg = TEMPORAL_SCHEMAS[MODEL_CONFIG[model]["schema"]]
-    if not model_schema_cfg['period_type'].get('timeseries'):
+    if not model_schema_cfg["period_type"].get("timeseries"):
         raise HTTPException(
             status_code=400,
-            detail=f"Model '{model}' does not support timeseries downloads."
+            detail=f"Model '{model}' does not support timeseries downloads.",
         )
     return model
