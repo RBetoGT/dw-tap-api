@@ -16,7 +16,7 @@ export const DATA_MODEL_INFO: Record<string, DataModelInfo> = {
       "https://www.ecmwf.int/en/forecasts/dataset/ecmwf-reanalysis-v5",
     help_href: "https://github.com/NREL/windwatts/blob/main/docs/about/era5.md",
     description: "ERA5 (ECMWF Reanalysis v5) Dataset",
-    year_range: "2020-2023",
+    year_range: "2013-2023",
     wind_speed_heights: ["10m", "30m", "40m", "50m", "60m", "80m", "100m"],
     wind_direction_heights: ["10m", "100m"],
   },
