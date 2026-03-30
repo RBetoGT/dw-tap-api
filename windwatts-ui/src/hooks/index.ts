@@ -10,7 +10,5 @@ export { useWindData } from "./useWindData";
 export { useWindRoseData } from "./useWindRoseData";
 export { useLossAdjustedProductionData } from "./useLossAdjustedProductionData";
 export { useOutputUnit } from "./useOutputUnit";
-export {
-  useDownloadCSVFile,
-  useNearestGridLocation,
-} from "./useDownloadCSVFile";
+export { useDownloadCSVFile } from "./useDownloadCSVFile";
+export { useNearestGridLocation } from "./useNearestGridLocation";
