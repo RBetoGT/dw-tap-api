@@ -83,7 +83,7 @@ export function getWindRoseLayout(
     autosize: true,
     barmode: "stack",
     dragmode: false,
-    margin: { t: 8, r: 36, b: 8, l: 36 },
+    margin: { t: 20, r: 16, b: 16, l: 16 },
     paper_bgcolor: "rgba(0,0,0,0)",
     plot_bgcolor: "rgba(0,0,0,0)",
     showlegend: true,
